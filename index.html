@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Denex</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #000000;
+      color: #fff;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    /* Watermark background using Denex-tap.png */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80vw;
+      height: 80vw;
+      max-width: 500px;
+      max-height: 500px;
+      background: url('./Denex-tap.png') no-repeat center center;
+      background-size: contain;
+      opacity: 0.03;
+      filter: blur(2px);
+      z-index: 0;
+    }
+    
+    /* Blue glow overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 30%, rgba(0, 153, 255, 0.15) 0%, transparent 50%),
+                  linear-gradient(180deg, #0a1929 0%, #000000 100%);
+      z-index: 0;
+    }
+    
+    /* All content above watermark */
+   .header,.tap-container,.energy-section,.popup {
+      position: relative;
+      z-index: 1;
+    }
+    
+  .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+    }
+  .user-info {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+  .balance {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 10px 18px;
+      border-radius: 25px;
+      border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 0 8px 32px rgba(0, 212, 255, 0.1);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  .dtk-icon {
+      width: 18px;
+      height: 18px;
+    }
+    
+    /* Main tap area */
+  .tap-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: calc(100vh - 200px);
+    }
+  .tap-wrapper {
+      position: relative;
+      width: 240px;
+      height: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  .tap-ring {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #00d4ff, #0099ff, #00d4ff);
+      animation: rotate 3s linear infinite;
+      padding: 3px;
+    }
+    @keyframes rotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  .tap-image {
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      object-fit: cover;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.1s ease;
+      position: relative;
+      z-index: 2;
+      background: #0a1929;
+    }
+  .tap-image:active {
+      transform: scale(0.92);
+    }
+  .tap-bounce {
+      animation: bounce 0.3s ease;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: scale(1); }
+      30% { transform: scale(0.9); }
+      60% { transform: scale(1.05); }
+    }
+  .tap-text {
+      margin-top: 24px;
+      font-size: 16px;
+      opacity: 0.6;
+      letter-spacing: 0.5px;
+    }
+    
+    /* Energy bar bottom */
+  .energy-section {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 20px;
+      background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.9) 100%);
+    }
+  .energy-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+  .energy-bar {
+      background: rgba(255,255,255,0.08);
+      height: 10px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+  .energy-fill {
+      background: linear-gradient(90deg, #00d4ff 0%, #0099ff 100%);
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.4s ease;
+      box-shadow: 0 0 15px rgba(0, 212, 255, 0.7);
+    }
+  .refill-btn {
+      background: rgba(0, 212, 255, 0.15);
+      border: 1px solid rgba(0, 212, 255, 0.5);
+      color: #00d4ff;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    
+    /* iPhone Glass Popup */
+  .popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      background: rgba(30,30,0.7);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 18px 28px;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      z-index: 999;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      font-weight: 500;
+    }
+  .popup.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    
+    /* Floating +70 text */
+  .float-text {
+      position: absolute;
+      color: #00ff88;
+      font-weight: 700;
+      font-size: 28px;
+      pointer-events: none;
+      animation: floatUp 1s ease-out forwards;
+      text-shadow: 0 0 15px rgba(0, 255, 136, 0.9);
+      z-index: 10;
+    }
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0) scale(0.8); }
+      100% { opacity: 0; transform: translateY(-100px) scale(1.2); }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="user-info" id="username">Loading...</div>
+    <div class="balance">
+      <svg class="dtk-icon" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#00d4ff"/>
+        <path d="M2 17L12 22L22 17M2 12L12 17L22 12" stroke="#00d4ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span id="dtkBalance">0</span> DTK
+    </div>
+  </div>
+
+  <div class="tap-container">
+    <div class="tap-wrapper">
+      <div class="tap-ring"></div>
+      <img src="./Denex-tap.png" class="tap-image" id="tapImage" alt="Tap Denex">
+    </div>
+    <div class="tap-text">Tap to mine DTK</div>
+  </div>
+
+  <div class="energy-section">
+    <div class="energy-top">
+      <span id="energyText">Energy: 100/100</span>
+      <button class="refill-btn" id="refillBtn" onclick="buyRefill()" style="display:none;">Refill 500 DTK</button>
+    </div>
+    <div class="energy-bar">
+      <div class="energy-fill" id="energyFill" style="width: 100%"></div>
+    </div>
+  </div>
+
+  <div class="popup" id="popup"></div>
+
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.expand();
+  tg.ready();
+  tg.setHeaderColor('#000000');
+  tg.setBackgroundColor('#000000');
+
+  const supabaseUrl = 'https://qdxaotqmbrbmwqqbuffy.supabase.co';
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkeGFvdHFtYnJibXdxcWJ1ZmZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDU2NTMsImV4cCI6MjA5OTI4MTY1M30.zbtpZNfLPpm8s7uMD9djXX61qAO6_fCe-hk2HDNGe1I';
+  const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+  
+  let user = tg.initDataUnsafe.user;
+  let userData = null;
+  let canTap = true;
+
+  async function init() {
+    if (!user) {
+      document.getElementById('username').innerText = 'Open in Telegram';
+      return;
+    }
+
+    await checkEnergyRefill();
+
+    const { data: existingUser, error } = await supabase
+   .from('users')
+   .select('*')
+   .eq('id', user.id)
+   .single();
+
+    if (error && error.code === 'PGRST116') {
+      const startParam = tg.initDataUnsafe.start_param;
+      let referrerId = null;
+      if (startParam && startParam.startsWith('ref_')) {
+        referrerId = parseInt(startParam.split('_')[1]);
+      }
+
+      const { data: newUser } = await supabase
+     .from('users')
+     .insert({
+          id: user.id,
+          username: user.username,
+          first_name: user.first_name,
+          referred_by: referrerId
+        })
+     .select()
+     .single();
+      
+      userData = newUser;
+
+      if (referrerId && referrerId!== user.id) {
+        await supabase.rpc('pay_referral', { referrer: referrerId, referred: user.id });
+        showPopup('+700 DTK Welcome Bonus!');
+      }
+    } else {
+      userData = existingUser;
+    }
+
+    updateUI();
+    setInterval(checkEnergyRefill, 60000);
+  }
+
+  async function checkEnergyRefill() {
+    if (!userData) return;
+    const now = new Date();
+    const lastRefill = new Date(userData.last_energy_refill);
+    const diff = now - lastRefill;
+    
+    if (diff >= 25200000 && userData.energy < 100) {
+      await supabase
+     .from('users')
+     .update({ energy: 100, last_energy_refill: now.toISOString() })
+     .eq('id', user.id);
+      userData.energy = 100;
+      userData.last_energy_refill = now.toISOString();
+      updateUI();
+      showPopup('Energy Refilled!');
+    }
+  }
+
+  document.getElementById('tapImage').addEventListener('click', async (e) => {
+    if (!canTap ||!userData || userData.energy <= 0) {
+      tg.HapticFeedback.notificationOccurred('error');
+      showPopup('No Energy! Wait 7h or buy refill');
+      return;
+    }
+
+    canTap = false;
+    tg.HapticFeedback.impactOccurred('light');
+    
+    e.target.classList.add('tap-bounce');
+    setTimeout(() => e.target.classList.remove('tap-bounce'), 300);
+
+    showFloatText(e.clientX, e.clientY);
+
+    const newEnergy = userData.energy - 1;
+    const newBalance = userData.dtk_balance + 70;
+    
+    const { data } = await supabase
+   .from('users')
+   .update({ 
+        energy: newEnergy, 
+        dtk_balance: newBalance,
+        last_tap: new Date().toISOString()
+      })
+   .eq('id', user.id)
+   .select()
+   .single();
+
+    userData = data;
+    updateUI();
+    
+    setTimeout(() => canTap = true, 100);
+  });
+
+  async function buyRefill() {
+    if (userData.dtk_balance < 500) {
+      showPopup('Need 500 DTK');
+      tg.HapticFeedback.notificationOccurred('error');
+      return;
+    }
+    
+    const { data } = await supabase
+   .from('users')
+   .update({ 
+        energy: 100, 
+        dtk_balance: userData.dtk_balance - 500,
+        last_energy_refill: new Date().toISOString()
+      })
+   .eq('id', user.id)
+   .select()
+   .single();
+    
+    userData = data;
+    updateUI();
+    tg.HapticFeedback.notificationOccurred('success');
+    showPopup('Energy Refilled!');
+  }
+
+  function updateUI() {
+    document.getElementById('username').innerText = userData.first_name || 'User';
+    document.getElementById('dtkBalance').innerText = userData.dtk_balance.toLocaleString();
+    document.getElementById('energyText').innerText = `Energy: ${userData.energy}/100`;
+    document.getElementById('energyFill').style.width = `${userData.energy}%`;
+    document.getElementById('refillBtn').style.display = userData.energy < 100? 'block' : 'none';
+  }
+
+  function showPopup(text) {
+    const popup = document.getElementById('popup');
+    popup.innerText = text;
+    popup.classList.add('show');
+    setTimeout(() => popup.classList.remove('show'), 2000);
+  }
+
+  function showFloatText(x, y) {
+    const float = document.createElement('div');
+    float.className = 'float-text';
+    float.innerText = '+70';
+    float.style.left = (x - 20) + 'px';
+    float.style.top = (y - 20) + 'px';
+    document.body.appendChild(float);
+    setTimeout(() => float.remove(), 1000);
+  }
+
+  init();
+</script>
+</body>
+</html>
