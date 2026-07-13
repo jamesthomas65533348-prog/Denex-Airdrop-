@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Denex</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: manipulation;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #000000;
+      color: #fff;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    body::before {
+      content: '';
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80vw;
+      height: 80vw;
+      max-width: 500px;
+      max-height: 500px;
+      background-image: url('/denex-tap.png'), url('./denex-tap.png'), url('./Denex-tap.png');
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      opacity: 0.03;
+      filter: blur(2px);
+      z-index: 0;
+    }
+    
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 30%, rgba(0, 153, 255, 0.15) 0%, transparent 50%),
+                  linear-gradient(180deg, #0a1929 0%, #000000 100%);
+      z-index: 0;
+    }
+    
+  .header,.content,.energy-section,.popup {
+      position: relative;
+      z-index: 1;
+    }
+    
+  .header {
+      padding: 12px 20px 0;
+      margin-top: 0;
+    }
+  .island {
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(40px);
+      -webkit-backdrop-filter: blur(40px);
+      border-radius: 25px;
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      gap: 8px;
+    }
+  .island-tabs {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 1;
+      overflow-x: auto;
+    }
+  .island-tab {
+      padding: 8px 14px;
+      border-radius: 18px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      opacity: 0.5;
+      white-space: nowrap;
+    }
+  .island-tab.active {
+      background: rgba(0, 212, 255, 0.2);
+      opacity: 1;
+      color: #00d4ff;
+    }
+  .balance {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(20px);
+      padding: 8px 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.15);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+  .dtk-icon {
+      width: 16px;
+      height: 16px;
+    }
+    
+  .content {
+      height: calc(100vh - 160px);
+      overflow-y: auto;
+      padding: 20px;
+    }
+  .page {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+  .page.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+  .tap-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+  .tap-wrapper {
+      position: relative;
+      width: 240px;
+      height: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  .tap-ring {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #00d4ff, #0099ff, #00d4ff);
+      animation: rotate 3s linear infinite;
+      padding: 3px;
+    }
+    @keyframes rotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  .tap-image {
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      object-fit: cover;
+      cursor: pointer;
+      transition: transform 0.1s ease;
+      position: relative;
+      z-index: 2;
+      background: #0a1929;
+      touch-action: none;
+    }
+  .tap-image:active {
+      transform: scale(0.92);
+    }
+  .tap-bounce {
+      animation: bounce 0.3s ease;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: scale(1); }
+      30% { transform: scale(0.9); }
+      60% { transform: scale(1.05); }
+    }
+  .tap-text {
+      margin-top: 24px;
+      font-size: 16px;
+      opacity: 0.6;
+      letter-spacing: 0.5px;
+    }
+  .tap-level {
+      margin-top: 8px;
+      font-size: 13px;
+      opacity: 0.5;
+    }
+    
+  .card {
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+  .card-title {
+      font-size: 14px;
+      opacity: 0.7;
+      margin-bottom: 8px;
+    }
+  .card-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #00d4ff;
+    }
+    .card-sub {
+      font-size: 12px;
+      opacity: 0.6;
+      margin: 8px 0;
+    }
+  .ref-link {
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      word-break: break-all;
+      margin: 12px 0;
+    }
+  .copy-btn {
+      background: #00d4ff;
+      color: #000;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      width: 100%;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    
+  .leader-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+  .leader-rank {
+      width: 30px;
+      font-weight: 700;
+      color: #00d4ff;
+    }
+  .leader-name {
+      flex: 1;
+      font-size: 15px;
+    }
+  .leader-bal {
+      font-weight: 600;
+    }
+  .you-badge {
+      background: rgba(0, 212, 255, 0.2);
+      color: #00d4ff;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      margin-left: 8px;
+    }
+    
+  .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      opacity: 0.5;
+    }
+  .empty-icon {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 16px;
+      opacity: 0.3;
+    }
+    
+  .energy-section {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 20px;
+      background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.9) 100%);
+    }
+  .energy-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+  .energy-bar {
+      background: rgba(255,255,255,0.08);
+      height: 10px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+  .energy-fill {
+      background: linear-gradient(90deg, #00d4ff 0%, #0099ff 100%);
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.4s ease;
+      box-shadow: 0 0 15px rgba(0, 212, 255, 0.7);
+    }
+  .refill-btn {
+      background: rgba(0, 212, 255, 0.15);
+      border: 1px solid rgba(0, 212, 255, 0.5);
+      color: #00d4ff;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+  .refill-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    
+  .popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      background: rgba(30,30,30,0.7);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 18px 28px;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      z-index: 999;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      font-weight: 500;
+      max-width: 80%;
+      text-align: center;
+    }
+  .popup.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    
+  .float-text {
+      position: absolute;
+      color: #00ff88;
+      font-weight: 700;
+      font-size: 28px;
+      pointer-events: none;
+      animation: floatUp 1s ease-out forwards;
+      text-shadow: 0 0 15px rgba(0, 255, 136, 0.9);
+      z-index: 10;
+    }
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0) scale(0.8); }
+      100% { opacity: 0; transform: translateY(-100px) scale(1.2); }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="island">
+      <div class="island-tabs">
+  <div class="island-tab active" data-page="mine">Mine</div>
+  <div class="island-tab" data-page="refs">Refs</div>
+  <div class="island-tab" data-page="board">Board</div>
+  <div class="island-tab" data-page="tasks">Tasks</div>
+  <div class="island-tab" id="adminTab" data-page="admin" style="display:none;">Admin</div>
+</div>
+      <div class="balance">
+        <svg class="dtk-icon" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#00d4ff"/>
+          <path d="M2 17L12 22L22 17M2 12L12 17L22 12" stroke="#00d4ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span id="dtkBalance">0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="page active" id="mine">
+      <div class="tap-container">
+        <div class="tap-wrapper">
+          <div class="tap-ring"></div>
+          <img src="/denex-tap.png" class="tap-image" id="tapImage" alt="Tap Denex" onerror="this.src='./denex-tap.png'; this.onerror=function(){this.src='./Denex-tap.png'}">
+        </div>
+        <div class="tap-text">Tap to mine DTK</div>
+        <div class="tap-level" id="tapLevel">Level 0: 70 DTK/tap</div>
+        <div class="card" id="upgradeCard" style="margin-top: 20px;">
+  <div class="card-title">Tap Power</div>
+  <div class="card-value" id="currentTap">70 DTK</div>
+  <div class="card-sub" id="nextTapText">Next: 170 DTK</div>
+  <button class="copy-btn" id="upgradeBtn" onclick="upgradeTap()">Upgrade - 10,000 DTK</button>
+</div>
+      </div>
+    </div>
+
+    <div class="page" id="refs">
+      <div class="card">
+        <div class="card-title">Total Referrals</div>
+        <div class="card-value" id="refCount">0</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Referral Earnings</div>
+        <div class="card-value" id="refEarned">0 DTK</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Your Invite Link</div>
+        <div class="ref-link" id="refLink">Loading...</div>
+        <button class="copy-btn" onclick="copyRef()">Copy Link</button>
+      </div>
+      <div class="card-title" style="margin-top: 24px; margin-bottom: 12px;">Recent Referrals</div>
+      <div id="refList"></div>
+    </div>
+
+    <div class="page" id="board">
+      <div class="card-title" style="margin-bottom: 16px;">Top Miners</div>
+      <div id="leaderList"></div>
+    </div>
+
+    <div class="page" id="tasks">
+  <div id="taskList"></div>
+</div>
+    <div class="page" id="admin">
+  <div class="card">
+    <div class="card-title">Total Users</div>
+    <div class="card-value" id="adminTotalUsers">0</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Total DTK Mined</div>
+    <div class="card-value" id="adminTotalDtk">0</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Estimated Total Taps</div>
+    <div class="card-value" id="adminTotalTaps">0</div>
+  </div>
+
+  <div class="card" style="margin-top:20px;">
+    <div class="card-title" style="margin-bottom:16px;">Create New Task</div>
+    <input id="taskTitle" type="text" placeholder="Task Title" style="width:100%;padding:12px;margin-bottom:10px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;font-size:14px;">
+    <textarea id="taskDesc" placeholder="Description" style="width:100%;padding:12px;margin-bottom:10px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;font-size:14px;min-height:60px;resize:none;"></textarea>
+    <input id="taskReward" type="number" placeholder="Reward DTK" style="width:100%;padding:12px;margin-bottom:10px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;font-size:14px;">
+    <select id="taskType" style="width:100%;padding:12px;margin-bottom:10px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;font-size:14px;">
+      <option value="manual">Manual - You verify</option>
+      <option value="join_channel">Join Channel</option>
+      <option value="join_group">Join Group</option>
+      <option value="visit_link">Visit Link</option>
+    </select>
+    <input id="taskUrl" type="text" placeholder="Channel/Group/Link URL" style="width:100%;padding:12px;margin-bottom:10px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;font-size:14px;">
+    <input id="taskExpire" type="datetime-local" style="width:100%;padding:12px;margin-bottom:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;font-size:14px;">
+    <button class="copy-btn" onclick="createTask()">Create Task</button>
+  </div>
+
+  <div class="card-title" style="margin-top:24px;margin-bottom:12px;">All Tasks</div>
+  <div id="adminTaskList"></div>
+</div>
+  </div>
+
+  <div class="energy-section">
+    <div class="energy-top">
+      <span id="energyText">Energy: 100/100</span>
+<span class="energy-timer" id="energyTimer"></span>
+      <button class="refill-btn" id="refillBtn" onclick="buyRefill()" style="display:none;">Refill 5000 DTK</button>
+    </div>
+    <div class="energy-bar">
+      <div class="energy-fill" id="energyFill" style="width: 100%"></div>
+    </div>
+  </div>
+
+  <div class="popup" id="popup"></div>
+
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.expand();
+  tg.ready();
+  tg.setHeaderColor('#000000');
+  tg.setBackgroundColor('#000000');
+  tg.enableClosingConfirmation();
+
+  const supabaseUrl = 'https://qdxaotqmbrbmwqqbuffy.supabase.co';
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkeGFvdHFtYnJibXdxcWJ1ZmZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDU2NTMsImV4cCI6MjA5OTI4MTY1M30.zbtpZNfLPpm8s7uMD9djXX61qAO6_fCe-hk2HDNGe1I';
+  const sb = window.supabase.createClient(supabaseUrl, supabaseKey);
+  
+  let user = tg.initDataUnsafe.user;
+  let userData = null;
+  let canTap = true;
+  let lastTapTime = 0;
+  let upgradeData = null;
+  
+async function upgradeTap() {
+  const { data, error } = await sb.rpc('upgrade_tap', { telegram_id: user.id });
+  
+  if (error) {
+    showPopup(error.message);
+    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+    return;
+  }
+  
+  const { data: newUser } = await sb.from('users').select('*').eq('id', user.id).single();
+  userData = newUser;
+  updateUI();
+  if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+  showPopup(`Upgraded! Now ${data.new_tap_amount} DTK/tap`);
+}
+  // TAB SWITCHING
+  document.querySelectorAll('.island-tab').forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      e.preventDefault();
+      const page = tab.dataset.page;
+      
+      document.querySelectorAll('.island-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(page).classList.add('active');
+      
+      if (page === 'refs') loadRefs();
+if (page === 'board') loadBoard();
+if (page === 'admin') { loadAdmin(); loadAdminTasks(); }
+if (page === 'tasks') loadTasks();
+      
+      if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    });
+  });
+
+  async function init() {
+    if (!user) {
+      showPopup('Open in Telegram');
+      return;
+    }
+
+    // Load upgrade tiers
+    const { data: upgrades } = await sb.from('tap_upgrades').select('*').order('id');
+    upgradeData = upgrades || [];
+
+    await checkEnergyRefill();
+
+    const { data: existingUser, error } = await sb
+.from('users')
+.select('*')
+.eq('id', user.id)
+.single();
+
+    if (error && error.code === 'PGRST116') {
+  const startParam = tg.initDataUnsafe.start_param;
+  let referrerId = null;
+  if (startParam && startParam.startsWith('ref_')) {
+    referrerId = parseInt(startParam.split('_')[1]);
+  }
+
+  const { data: newUser, error: insertErr } = await sb.rpc('create_denex_user', {
+    telegram_id: user.id,
+    username: user.username,
+    first_name: user.first_name,
+    referrer_id: referrerId
+  });
+
+  if (insertErr) {
+    showPopup('DB Error: ' + insertErr.message);
+    return;
+  }
+
+  userData = newUser;
+
+  if (referrerId && referrerId!== user.id) {
+    await sb.rpc('pay_referral', { referrer: referrerId, referred: user.id });
+    showPopup('+700 DTK Welcome Bonus!');
+  }
+    } else if (error) {
+      showPopup('DB Error');
+      return;
+    } else {
+  userData = existingUser;
+  if (!userData.tap_level) userData.tap_level = 0;
+  if (!userData.tap_per_click) userData.tap_per_click = 70;
+}
+
+// Show admin tab if user is admin
+if (userData.is_admin) {
+  document.getElementById('adminTab').style.display = 'block';
+}
+
+updateUI();
+setInterval(checkEnergyRefill, 5000); // Check every 5s instead of 60s
+setInterval(updateTimers, 1000);
+updateTimers();
+}
+
+  async function checkEnergyRefill() {
+  if (!userData) return;
+  const { data } = await sb.rpc('auto_refill_energy', { telegram_id: user.id });
+  if (data?.refilled) {
+    userData.energy = data.energy;
+    userData.last_energy_refill = data.last_energy_refill; // THIS LINE WAS MISSING
+    updateUI();
+    showPopup('Energy Refilled!');
+  }
+}
+
+  function canBuyRefill() {
+    if (!userData.last_refill_bought) return true;
+    const now = new Date();
+    const lastBought = new Date(userData.last_refill_bought);
+    const diff = now - lastBought;
+    return diff >= 172800000; // 48 hours
+  }
+
+  function getRefillCost() {
+    if (!upgradeData ||!userData) return 5000;
+    const tier = upgradeData.find(u => u.id === userData.tap_level);
+    return tier? tier.refill_cost : 5000;
+  }
+
+  function getTapAmount() {
+    return userData?.tap_per_click || 70;
+  }
+
+  function getNextRefillTime() {
+    if (!userData.last_refill_bought) return null;
+    return new Date(new Date(userData.last_refill_bought).getTime() + 172800000);
+  }
+  function getNextEnergyTime() {
+  if (!userData.last_energy_refill) return null;
+  return new Date(new Date(userData.last_energy_refill).getTime() + 25200000);
+}
+
+  function formatCountdown(ms) {
+  if (ms <= 0) return '';
+  const hours = Math.floor(ms / 3600000);
+  const minutes = Math.floor((ms % 3600000) / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m ${seconds}s`;
+  return `${seconds}s`;
+}
+
+function updateTimers() {
+  // Energy auto-refill countdown
+  if (userData && userData.energy < 100) {
+    const nextTime = getNextEnergyTime();
+    if (nextTime) {
+      const diff = nextTime - new Date();
+      if (diff <= 0) {
+        document.getElementById('energyTimer').innerText = '';
+        checkEnergyRefill(); // INSTANT CHECK when timer hits 0
+      } else {
+        document.getElementById('energyTimer').innerText = `Full in ${formatCountdown(diff)}`;
+      }
+    }
+  } else {
+    document.getElementById('energyTimer').innerText = '';
+  }
+
+  // Refill button cooldown
+  const refillBtn = document.getElementById('refillBtn');
+  if (userData && userData.energy < 100) {
+    if (!canBuyRefill()) {
+      const nextTime = getNextRefillTime();
+      const diff = nextTime - new Date();
+      refillBtn.innerText = `Wait ${formatCountdown(diff)}`;
+      refillBtn.disabled = true;
+    } else {
+      const cost = getRefillCost();
+      refillBtn.innerText = `Refill ${cost.toLocaleString()} DTK`;
+      refillBtn.disabled = false;
+    }
+    refillBtn.style.display = 'block';
+  } else {
+    refillBtn.style.display = 'none';
+  }
+}
+  // MULTI-TOUCH SUPPORT: Up to 4 fingers
+  // MULTI-TOUCH SUPPORT: Up to 4 fingers
+  document.getElementById('tapImage').addEventListener('touchstart', async (e) => {
+  e.preventDefault();
+  if (!userData) return;
+  
+  const touchCount = Math.min(e.touches.length, 4);
+  
+  if (userData.energy < touchCount) {
+  await checkEnergyRefill(); // Try refill before showing error
+  if (userData.energy < touchCount) {
+    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+    showPopup(`Need ${touchCount} Energy!`);
+    return;
+  }
+}
+
+  if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+  
+  const img = e.target;
+  img.classList.add('tap-bounce');
+  setTimeout(() => img.classList.remove('tap-bounce'), 300);
+
+  for (let i = 0; i < touchCount; i++) {
+    const touch = e.touches[i];
+    showFloatText(touch.clientX, touch.clientY, userData.tap_per_click);
+  }
+
+  // Optimistic UI
+  userData.energy -= touchCount;
+  userData.dtk_balance += userData.tap_per_click * touchCount;
+  updateUI();
+  
+  const { data, error } = await sb.rpc('handle_tap', { 
+  touch_count: touchCount, 
+  telegram_id: user.id 
+});
+
+  if (error) {
+    showPopup(error.message);
+    // Revert optimistic update
+    userData.energy += touchCount;
+    userData.dtk_balance -= userData.tap_per_click * touchCount;
+    updateUI();
+    return;
+  }
+  
+  // Sync with server truth
+  userData.energy = data.energy;
+  userData.dtk_balance = data.dtk_balance;
+  updateUI();
+});
+
+  async function buyRefill() {
+  const { data, error } = await sb.rpc('buy_refill', { telegram_id: user.id });
+  
+  if (error) {
+    showPopup(error.message);
+    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+    return;
+  }
+  
+  // Refresh user data
+  const { data: newUser } = await sb.from('users').select('*').eq('id', user.id).single();
+  userData = newUser;
+  updateUI();
+  if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+  showPopup('Energy Refilled!');
+}
+
+  async function loadAdmin() {
+  const { data, error } = await sb.rpc('get_admin_stats', { telegram_id: user.id });
+  if (error) {
+    showPopup('Admin access denied');
+    return;
+  }
+  document.getElementById('adminTotalUsers').innerText = data.total_users.toLocaleString();
+  document.getElementById('adminTotalDtk').innerText = data.total_dtk_mined.toLocaleString() + ' DTK';
+  document.getElementById('adminTotalTaps').innerText = data.estimated_total_taps.toLocaleString();
+}
+
+  async function createTask() {
+  const title = document.getElementById('taskTitle').value;
+  const desc = document.getElementById('taskDesc').value;
+  const reward = parseInt(document.getElementById('taskReward').value);
+  const type = document.getElementById('taskType').value;
+  const url = document.getElementById('taskUrl').value;
+  const expire = document.getElementById('taskExpire').value || null;
+  
+  if (!title || !reward) return showPopup('Title and Reward required');
+  
+  const { data, error } = await sb.rpc('create_task', {
+    telegram_id: user.id,
+    p_title: title,
+    p_description: desc,
+    p_reward_dtk: reward,
+    p_task_type: type,
+    p_target_url: url || null,
+    p_expires_at: expire ? new Date(expire).toISOString() : null
+  });
+  
+  if (error) return showPopup(error.message);
+  
+  showPopup('Task Created!');
+  document.getElementById('taskTitle').value = '';
+  document.getElementById('taskDesc').value = '';
+  document.getElementById('taskReward').value = '';
+  document.getElementById('taskUrl').value = '';
+  document.getElementById('taskExpire').value = '';
+  loadAdminTasks();
+  if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+}
+
+async function loadAdminTasks() {
+  const { data, error } = await sb.rpc('get_all_tasks_admin', { telegram_id: user.id });
+  if (error) return;
+  
+  const list = document.getElementById('adminTaskList');
+  list.innerHTML = data?.length ? data.map(t => `
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-weight:600;">${t.title}</div>
+        <div style="font-size:12px;opacity:0.6;">${t.completion_count} done</div>
+      </div>
+      <div style="font-size:13px;opacity:0.7;margin-bottom:8px;">${t.reward_dtk} DTK • ${t.task_type}</div>
+      <div style="font-size:11px;opacity:0.5;">${t.is_active ? 'Active' : 'Inactive'} ${t.expires_at ? '• Expires ' + new Date(t.expires_at).toLocaleDateString() : ''}</div>
+    </div>
+  `).join('') : '<div style="opacity:0.5;text-align:center;padding:20px;">No tasks created</div>';
+}
+
+async function loadTasks() {
+  const { data, error } = await sb.rpc('get_active_tasks', { telegram_id: user.id });
+  if (error) return;
+  
+  const list = document.getElementById('taskList');
+  list.innerHTML = data?.length ? data.map(t => `
+    <div class="card">
+      <div class="card-title">${t.title}</div>
+      <div style="font-size:13px;opacity:0.7;margin:8px 0;">${t.description || ''}</div>
+      <div class="card-value" style="font-size:20px;margin:12px 0;">+${t.reward_dtk} DTK</div>
+      ${t.completed ? 
+        '<button class="copy-btn" disabled style="opacity:0.3;">Completed ✓</button>' :
+        `<button class="copy-btn" onclick="doTask(${t.id}, '${t.task_type}', '${t.target_url || ''}')">
+          ${t.task_type === 'join_channel' ? 'Join Channel' : t.task_type === 'join_group' ? 'Join Group' : t.task_type === 'visit_link' ? 'Visit Link' : 'Complete'}
+        </button>`
+      }
+      ${t.expires_at ? `<div style="font-size:11px;opacity:0.5;margin-top:8px;">Expires ${new Date(t.expires_at).toLocaleDateString()}</div>` : ''}
+    </div>
+  `).join('') : '<div class="empty-state"><div style="font-size: 16px; margin-bottom: 8px;">No available tasks yet</div><div style="font-size: 14px; opacity: 0.5;">Come back later</div></div>';
+}
+
+async function doTask(taskId, type, url) {
+  if (type !== 'manual' && url) tg.openTelegramLink(url);
+  
+  const { data, error } = await sb.rpc('complete_task', { telegram_id: user.id, p_task_id: taskId });
+  if (error) return showPopup(error.message);
+  
+  userData.dtk_balance += data.reward;
+  updateUI();
+  showPopup(`+${data.reward} DTK!`);
+  loadTasks();
+  if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+}
+  async function loadRefs() {
+    const { data: refs, error } = await sb
+.from('referrals')
+.select('*, referred:users!referrals_referred_id_fkey(first_name)')
+.eq('referrer_id', user.id)
+.order('created_at', { ascending: false })
+.limit(10);
+    
+    if (error) return;
+    
+    const { count } = await sb
+.from('referrals')
+.select('*', { count: 'exact', head: true })
+.eq('referrer_id', user.id);
+    
+    document.getElementById('refCount').innerText = count || 0;
+    document.getElementById('refEarned').innerText = ((count || 0) * 500).toLocaleString() + ' DTK';
+    document.getElementById('refLink').innerText = `https://t.me/Denex_airdrop_bot/Denex?startapp=ref_${user.id}`;
+    
+    const list = document.getElementById('refList');
+    list.innerHTML = refs?.length? refs.map(r => `
+      <div class="leader-item">
+        <div class="leader-name">${r.referred.first_name || 'User'}</div>
+        <div class="leader-bal" style="color: #00ff88;">+500 DTK</div>
+      </div>
+    `).join('') : '<div style="opacity:0.5;text-align:center;padding:20px;">No referrals yet</div>';
+  }
+
+  async function loadBoard() {
+    const { data: leaders, error } = await sb
+.from('users')
+.select('first_name, dtk_balance, id')
+.order('dtk_balance', { ascending: false })
+.limit(100);
+    
+    if (error) return;
+    
+    const list = document.getElementById('leaderList');
+    list.innerHTML = leaders.map((u, i) => `
+      <div class="leader-item">
+        <div class="leader-rank">#${i + 1}</div>
+        <div class="leader-name">
+          ${u.first_name || 'User'}
+          ${u.id === user.id? '<span class="you-badge">YOU</span>' : ''}
+        </div>
+        <div class="leader-bal">${u.dtk_balance.toLocaleString()} DTK</div>
+      </div>
+    `).join('');
+  }
+
+  function copyRef() {
+    const link = `https://t.me/Denex_airdrop_bot/Denex?startapp=ref_${user.id}`;
+    navigator.clipboard.writeText(link);
+    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    showPopup('Link Copied!');
+  }
+
+  function updateUI() {
+  if (!userData) return;
+  document.getElementById('dtkBalance').innerText = userData.dtk_balance.toLocaleString();
+  document.getElementById('energyText').innerText = `Energy: ${userData.energy}/100`;
+  document.getElementById('energyFill').style.width = `${userData.energy}%`;
+  
+  document.getElementById('tapLevel').innerText = `Level ${userData.tap_level}: ${getTapAmount()} DTK/tap`;
+  
+  // Update upgrade card
+  if (upgradeData && userData.tap_level < upgradeData.length - 1) {
+    const nextTier = upgradeData[userData.tap_level + 1];
+    document.getElementById('currentTap').innerText = `${getTapAmount()} DTK`;
+    document.getElementById('nextTapText').innerText = `Next: ${nextTier.tap_amount} DTK`;
+    document.getElementById('upgradeBtn').innerText = `Upgrade - ${nextTier.upgrade_cost.toLocaleString()} DTK`;
+    document.getElementById('upgradeBtn').style.display = 'block';
+  } else {
+    document.getElementById('currentTap').innerText = `${getTapAmount()} DTK`;
+    document.getElementById('nextTapText').innerText = 'MAX LEVEL';
+    document.getElementById('upgradeBtn').style.display = 'none';
+  }
+}
+
+  function showPopup(text) {
+    const popup = document.getElementById('popup');
+    popup.innerText = text;
+    popup.classList.add('show');
+    setTimeout(() => popup.classList.remove('show'), 2000);
+  }
+
+  function showFloatText(x, y, amount) {
+  const float = document.createElement('div');
+  float.className = 'float-text';
+  float.innerText = `+${amount}`;
+  float.style.left = (x - 20) + 'px';
+  float.style.top = (y - 20) + 'px';
+  document.body.appendChild(float);
+  setTimeout(() => float.remove(), 1000);
+}
+
+  init();
+</script>
+</body>
+</html>
