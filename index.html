@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AirBy - TGE Final Phase</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
+html{scroll-behavior:smooth}
+body{font-family:"Poppins",sans-serif;background:#020617;color:#fff;min-height:100vh;overflow-x:hidden;position:relative;-webkit-font-smoothing:antialiased;}
+/* iPhone 17 Frozen Background */
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(1200px 800px at 20% 10%, rgba(0,102,255,0.25), transparent 60%), radial-gradient(900px 600px at 90% 90%, rgba(10,132,255,0.15), transparent 60%), linear-gradient(180deg,#000b1a 0%,#020617 100%);z-index:-3;}
+#starfield{position:fixed;inset:0;z-index:-2;}
+.blur-orbs{position:fixed;inset:0;z-index:-1;overflow:hidden;}
+.orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:0.4;}
+.orb1{width:600px;height:600px;background:radial-gradient(circle,#0066ff,#0044aa);top:-200px;left:-200px;animation:float1 12s ease-in-out infinite;}
+.orb2{width:500px;height:500px;background:radial-gradient(circle,#0A84FF,#0066ff);bottom:-150px;right:-150px;animation:float2 10s ease-in-out infinite;}
+@keyframes float1{0%,100%{transform:translate(0,0)}50%{transform:translate(80px,40px)}}
+@keyframes float2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,-30px)}}
+
+/* DYNAMIC ISLAND - iPhone 17 */
+.dynamic-island-wrap{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:100;width:auto;display:flex;justify-content:center;}
+.dynamic-island{background:rgba(0,0,0,0.88);backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border-radius:999px;border:1px solid rgba(255,255,255,0.12);padding:10px 22px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15);transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);}
+.dynamic-island img{width:26px;height:26px;border-radius:8px;box-shadow:0 0 12px rgba(0,102,255,0.5);}
+.island-text{font-size:12px;font-weight:700;letter-spacing:0.04em;}
+.island-dot{width:6px;height:6px;background:#00d188;border-radius:50%;box-shadow:0 0 8px #00d188;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* MAIN CONTAINER */
+.container{max-width:480px;margin:0 auto;padding:88px 20px 40px;position:relative;z-index:1;}
+/* GLASS CARD - Frozen */
+.glass-card{background:rgba(255,255,255,0.06);backdrop-filter:blur(32px) saturate(180%);-webkit-backdrop-filter:blur(32px) saturate(180%);border:1px solid rgba(255,255,255,0.14);border-radius:32px;box-shadow:0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12);overflow:hidden;position:relative;}
+.glass-card::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 40%);pointer-events:none;}
+.top-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(0,209,136,0.12);border:1px solid rgba(0,209,136,0.25);color:#00d188;padding:6px 14px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:0.08em;margin-bottom:16px;}
+.hero{text-align:center;padding:28px 24px 22px;}
+.logo-glow{width:88px;height:88px;margin:0 auto 16px;border-radius:24px;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.12);display:grid;place-items:center;box-shadow:0 0 40px rgba(0,102,255,0.4), inset 0 1px 0 rgba(255,255,255,0.15);backdrop-filter:blur(20px);}
+.logo-glow img{width:64px;height:64px;border-radius:16px;}
+.hero h1{font-size:34px;font-weight:900;line-height:1.05;letter-spacing:-0.03em;}
+.hero h1 span{background:linear-gradient(180deg,#60a5fa,#0066ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hero .formerly{margin-top:6px;color:#8a94a7;font-size:13px;font-weight:600;}
+.hero .formerly b{color:#5a6a82;}
+.tge-title{margin-top:14px;font-size:18px;font-weight:800;color:#eaf2ff;}
+.tge-sub{margin-top:8px;color:#9fb0c9;font-size:14px;line-height:1.6;max-width:320px;margin-left:auto;margin-right:auto;}
+.mining-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:22px 24px;}
+.stat{background:rgba(0,0,0,0.3);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:16px;text-align:center;}
+.stat-val{font-size:22px;font-weight:800;color:#fff;}
+.stat-label{font-size:11px;color:#7c8ba3;font-weight:700;letter-spacing:0.06em;margin-top:4px;}
+.cta-section{padding:0 24px 24px;text-align:center;}
+.btn-tge{width:100%;padding:18px;border-radius:999px;border:none;background:linear-gradient(180deg,#1990ff 0%,#0066ff 100%);color:#fff;font-weight:900;font-size:16px;letter-spacing:0.02em;box-shadow:0 16px 44px rgba(0,102,255,0.45), 0 0 0 1px rgba(255,255,255,0.1) inset;cursor:pointer;transition:transform 0.2s;display:flex;align-items:center;justify-content:center;gap:10px;}
+.btn-tge:active{transform:scale(0.97);}
+.btn-sub{margin-top:12px;font-size:11.5px;color:#6e7d93;font-weight:600;}
+.version-row{margin-top:18px;display:flex;justify-content:center;gap:12px;font-size:11px;color:#5a6a82;font-weight:600;}
+.info-cards{margin-top:18px;display:grid;gap:12px;}
+.info-card{background:rgba(0,0,0,0.28);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:18px 18px;display:flex;gap:14px;align-items:flex-start;}
+.info-ico{width:36px;height:36px;border-radius:12px;background:rgba(0,102,255,0.12);border:1px solid rgba(0,102,255,0.2);display:grid;place-items:center;font-size:18px;flex-shrink:0;}
+.info-text h4{font-size:13px;font-weight:800;color:#eaf2ff;}
+.info-text p{font-size:12px;color:#8a94a7;line-height:1.5;margin-top:4px;}
+.footer{text-align:center;margin-top:28px;padding:20px;color:#4a5a72;font-size:11px;line-height:1.6;}
+.footer b{color:#6e7d93;}
+.telegram-user{background:rgba(0,0,0,0.35);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.08);border-radius:999px;padding:8px 14px;display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<canvas id="starfield"></canvas>
+<div class="blur-orbs"><div class="orb orb1"></div><div class="orb orb2"></div></div>
+
+<div class="dynamic-island-wrap">
+  <div class="dynamic-island" id="dynamicIsland">
+    <img src="./airby.png" alt="AirBy">
+    <span class="island-text">AirBy TGE • Live</span>
+    <span class="island-dot"></span>
+  </div>
+</div>
+
+<div class="container">
+  <div class="glass-card">
+    <div class="hero">
+      <div class="telegram-user" id="tgUser" style="display:none;">👋 Loading...</div>
+      <div class="logo-glow"><img src="./airby.png" alt="AirBy"></div>
+      <div class="top-badge"><span style="width:6px;height:6px;background:#00d188;border-radius:50%;display:inline-block"></span> MINING PHASE OVER</div>
+      <h1>Complete <span>AirBy</span><br>TGE Now</h1>
+      <div class="formerly">Formerly known as <b>Denex</b> • Now AirBy Official</div>
+      <div class="tge-title">Your DTK will convert to AirBy tokens</div>
+      <div class="tge-sub">Mining has ended. Download AirBy APK, register with same Telegram email, and your Denex balance + referrals will be credited for TGE.</div>
+    </div>
+
+    <div class="mining-stats">
+      <div class="stat"><div class="stat-val" id="statBalance">0</div><div class="stat-label">Your DTK Mined</div></div>
+      <div class="stat"><div class="stat-val" id="statRefs">0</div><div class="stat-label">Referrals</div></div>
+    </div>
+
+    <div class="cta-section">
+      <button class="btn-tge" id="btnTGE" onclick="downloadAirBy()">🚀 Complete TGE – Download AirBy</button>
+      <div class="btn-sub" id="btnSub">Fetching latest build from AirBy network...</div>
+      <div class="version-row"><span id="verName">vLoading</span> • <span id="verSize">~25 MB</span> • <span>Android 4.1+</span></div>
+    </div>
+  </div>
+
+  <div class="info-cards">
+    <div class="info-card"><div class="info-ico">🎁</div><div class="info-text"><h4>New Users Reward</h4><p>Didn't mine Denex? No worries. New users that download AirBy, register and complete TGE verification will still get welcome bonus + ERA airdrop.</p></div></div>
+    <div class="info-card"><div class="info-ico">🪙</div><div class="info-text"><h4>ERA – AirBy Official Token</h4><p>AirBy owns ERA token. View balance in Naira ↔ ERA. Live price updates every 30s. Your Naira worth converts to ERA display.</p></div></div>
+    <div class="info-card"><div class="info-ico">⚡</div><div class="info-text"><h4>Gas Fee + Vouchers</h4><p>Withdrawals: ₦0 ≤₦10k else ₦100-200 gas. Token trades 0.5%. Vouchers FREE instant – send money without bank.</p></div></div>
+  </div>
+
+  <div class="footer">
+    <b>AirBy Trading Hub</b> • Formerly Denex<br>
+    © 2026 AirBy • TGE Final Phase • All Denex data migrates to AirBy<br>
+    <span style="color:#00d188">● Live</span> • Secure • Fast • Built for Nigeria
+  </div>
+</div>
+
+<script>
+// DUAL SUPABASE
+const DENEX_URL = 'https://qdxaotqmbrbmwqqbuffy.supabase.co';
+const DENEX_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkeGFvdHFtYnJibXdxcWJ1ZmZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDU2NTMsImV4cCI6MjA5OTI4MTY1M30.zbtpZNfLPpm8s7uMD9djXX61qAO6_fCe-hk2HDNGe1I';
+const denexClient = window.supabase.createClient(DENEX_URL, DENEX_KEY);
+
+const AIRBY_URL = window.SUPABASE_URL || window.supabaseConfig?.url;
+const AIRBY_KEY = window.SUPABASE_ANON_KEY || window.supabaseConfig?.anonKey;
+const airbyClient = AIRBY_URL && AIRBY_KEY ? window.supabase.createClient(AIRBY_URL, AIRBY_KEY) : null;
+
+let latestApkUrl = null;
+let tgUser = null;
+
+// Starfield iPhone 17
+(function(){ const c=document.getElementById('starfield'); const ctx=c.getContext('2d',{alpha:true}); let w,h,stars=[],dpr=Math.min(devicePixelRatio||1,2); function resize(){ w=c.clientWidth=window.innerWidth; h=c.clientHeight=window.innerHeight; c.width=w*dpr; c.height=h*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); stars=Array.from({length:Math.floor(w*h/5000)},()=>({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.2+0.2,a:Math.random()*0.6+0.2,t:Math.random()*6,s:Math.random()*0.01+0.004}));} function tick(){ ctx.clearRect(0,0,w,h); for(const s of stars){ s.t+=s.s; const a=s.a+Math.sin(s.t)*0.2; ctx.globalAlpha=Math.max(0.1,a); ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,6.28); ctx.fillStyle='#dbe9ff'; ctx.fill(); } requestAnimationFrame(tick); } window.addEventListener('resize',resize); resize(); tick(); })();
+
+async function initTelegram(){
+  try{
+    const tg = window.Telegram?.WebApp;
+    if(tg){ tg.expand(); tg.ready(); tg.setHeaderColor('#020617'); tg.setBackgroundColor('#020617'); }
+    const user = tg?.initDataUnsafe?.user;
+    if(user){
+      tgUser = user;
+      document.getElementById('tgUser').style.display='inline-flex';
+      document.getElementById('tgUser').innerText=`👋 ${user.first_name} • ${user.id}`;
+      // Fetch Denex balance from OLD supabase
+      const { data } = await denexClient.from('users').select('dtk_balance').eq('id', user.id).single();
+      if(data){ document.getElementById('statBalance').innerText = Number(data.dtk_balance||0).toLocaleString(); document.getElementById('dynamicIsland').innerHTML = `<img src="./airby.png"><span class="island-text">${Number(data.dtk_balance||0).toLocaleString()} DTK • TGE Ready</span><span class="island-dot"></span>`; }
+      const { count } = await denexClient.from('referrals').select('*',{count:'exact',head:true}).eq('referrer_id', user.id);
+      document.getElementById('statRefs').innerText = count||0;
+    }
+  }catch(e){ console.log('TG error',e); }
+}
+
+async function fetchAirByApk(){
+  if(!airbyClient){ document.getElementById('btnSub').innerText='Missing config.js – Check SUPABASE_URL'; return; }
+  try{
+    const { data, error } = await airbyClient.from('app_updates').select('*').order('version_code',{ascending:false}).limit(1).single();
+    if(error) throw error;
+    latestApkUrl = data.apk_url;
+    document.getElementById('verName').innerText = `v${data.version_name} • Build ${data.version_code}`;
+    document.getElementById('verSize').innerText = data.file_size ? (data.file_size/1024/1024).toFixed(1)+' MB' : '~25 MB';
+    document.getElementById('btnSub').innerText = `Latest: v${data.version_name} • Direct APK • ${new Date(data.created_at).toLocaleDateString()}`;
+    // Realtime
+    airbyClient.channel('airby-tge-apk').on('postgres_changes',{event:'*',schema:'public',table:'app_updates'},()=>fetchAirByApk()).subscribe();
+  }catch(e){
+    console.log(e);
+    document.getElementById('btnSub').innerText='Failed to load build – check app_updates table in new Supabase';
+  }
+}
+
+function downloadAirBy(){
+  if(!latestApkUrl){ alert('Latest AirBy build still loading, please wait 2 sec...'); fetchAirByApk(); return; }
+  // Dynamic island animation
+  document.getElementById('dynamicIsland').style.transform='scale(1.08)';
+  setTimeout(()=>document.getElementById('dynamicIsland').style.transform='scale(1)',200);
+  const a=document.createElement('a');
+  a.href=latestApkUrl;
+  a.download=`AirBy-TGE-v${Date.now()}.apk`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Haptic
+  if(window.Telegram?.WebApp?.HapticFeedback) Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+}
+
+initTelegram();
+fetchAirByApk();
+</script>
+</body>
+</html>
